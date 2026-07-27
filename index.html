@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Браузерный Игровой Движок</title>
+    <!-- Подключаем библиотеку JSZip для архивации на клиенте -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        * { box-sizing: border-box; font-family: sans-serif; }
+        body { margin: 0; display: flex; height: 100vh; background: #1e1e1e; color: #fff; }
+        
+        /* Боковая панель файлов */
+        #sidebar { width: 250px; background: #252526; border-right: 1px solid #3c3c3c; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        .btn { background: #0e639c; color: white; border: none; padding: 6px; cursor: pointer; border-radius: 3px; }
+        .btn:hover { background: #1177bb; }
+        #file-tree { flex-grow: 1; overflow-y: auto; font-size: 14px; }
+        .tree-item { padding: 4px; cursor: pointer; border-radius: 3px; }
+        .tree-item:hover { background: #37373d; }
+        .selected { background: #37373d; font-weight: bold; }
+
+        /* Зона редактора кода */
+        #editor-container { flex-grow: 1; display: flex; flex-direction: column; padding: 10px; }
+        #current-file-title { margin-bottom: 5px; color: #aaa; font-size: 13px; }
+        textarea { flex-grow: 1; background: #1e1e1e; color: #d4d4d4; border: 1px solid #3c3c3c; font-family: monospace; font-size: 16px; padding: 10px; resize: none; outline: none; }
+        
+        /* Кнопки управления */
+        #controls { margin-top: 10px; display: flex; gap: 10px; }
+        
+        /* Скрытый или раскрываемый iframe игры */
+        iframe { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; background: white; z-index: 9999; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Файловый менеджер -->
+    <div id="sidebar">
+        <h3>Проект</h3>
+        <button class="btn" onclick="createFolder()">+ Новая папка</button>
+        <button class="btn" onclick="createFile()">+ Новый файл</button>
+        <div id="file-tree"></div>
+    </div>
+
+    <!-- 2. Редактор кода -->
+    <div id="editor-container">
+        <div id="current-file-title">Файл не выбран</div>
+        <textarea id="code-editor" disabled oninput="updateFileContent(this.value)"></textarea>
+        
+        <div id="controls">
+            <button class="btn" style="background:#28a745" onclick="runGame()">▶ Запустить игру</button>
+            <button class="btn" style="background:#6c757d" onclick="exportWeb()">📦 Экспорт Web (.ZIP)</button>
+        </div>
+    </div>
+
+    <!-- 3. Окно для запуска игры -->
+    <iframe id="game-preview"></iframe>
+
+    <script>
+        // Виртуальная файловая система (структура папок и файлов)
+        // По умолчанию создаем структуру с index.html
+        let fileSystem = {
+            "root": {
+                type: "folder",
+                children: {
+                    "index.html": { type: "file", content: "<h1>Моя Игра</h1>\n<script src='script.js'><\/script>\n<link rel='stylesheet' href='style.css'>" },
+                    "style.css": { type: "file", content: "body { background: linear-gradient(45deg, #e66465, #9198e5); text-align: center; color: white; padding-top: 20%; }" },
+                    "script.js": { type: "file", content: "console.log('Игра успешно запущена!');" }
+                }
+            }
+        };
+
+        let currentPath = "root"; 
+        let selectedFile = null;
+
+        // Рендеринг дерева файлов в боковую панель
+        function renderTree() {
+            const treeContainer = document.getElementById('file-tree');
+            treeContainer.innerHTML = '';
+            
+            // Простая функция для обхода структуры (для прототипа выводим вложенность списком)
+            function walk(obj, parentPath) {
+                for (let key in obj) {
+                    let path = parentPath ? `${parentPath}/${key}` : key;
+                    let item = obj[key];
+                    
+                    let div = document.createElement('div');
+                    div.className = 'tree-item' + (selectedFile === path ? ' selected' : '');
+                    div.textContent = (item.type === 'folder' ? '📁 ' : '📄 ') + key;
+                    
+                    if (item.type === 'folder') {
+                        div.onclick = () => { currentPath = path; alert(`Вы перешли в папку: ${key}`); };
+                    } else {
+                        div.onclick = () => { selectFile(path); };
+                    }
+                    treeContainer.appendChild(div);
+                    
+                    if (item.type === 'folder' && item.children) {
+                        walk(item.children, path);
+                    }
+                }
+            }
+            walk(fileSystem.root.children, "root");
+        }
+
+        // Поиск объекта файла по его строковому пути
+        function getFileByPath(path) {
+            let parts = path.split('/');
+            let current = fileSystem;
+            for (let part of parts) {
+                if (current.children) current = current.children;
+                current = current[part];
+            }
+            return current;
+        }
+
+        // Выбор файла для редактирования
+        function selectFile(path) {
+            selectedFile = path;
+            let file = getFileByPath(path);
+            document.getElementById('current-file-title').textContent = path.replace('root/', '');
+            let editor = document.getElementById('code-editor');
+            editor.disabled = false;
+            editor.value = file.content;
+            renderTree();
+        }
+
+        // Обновление контента при вводе кода
+        function updateFileContent(val) {
+            if (!selectedFile) return;
+            let file = getFileByPath(selectedFile);
+            file.content = val;
+        }
+
+        // Создание новой папки в текущей выбранной директории
+        function createFolder() {
+            let name = prompt("Введите имя папки:");
+            if (!name) return;
+            let currentDir = getFileByPath(currentPath);
+            if (!currentDir.children) currentDir.children = {};
+            currentDir.children[name] = { type: "folder", children: {} };
+            renderTree();
+        }
+
+        // Создание нового файла в текущей выбранной директории
+        function createFile() {
+            let name = prompt("Введите имя файла (например, player.js):");
+            if (!name) return;
+            let currentDir = getFileByPath(currentPath);
+            if (!currentDir.children) currentDir.children = {};
+            currentDir.children[name] = { type: "file", content: "" };
+            renderTree();
+        }
+
+        // ▶ ЗАПУСК ИГРЫ НА ВЕСЬ ЭКРАН (Реализация внедрения связей без сервера)
+        function runGame() {
+            let htmlFile = getFileByPath("root/index.html");
+            let cssFile = getFileByPath("root/style.css");
+            let jsFile = getFileByPath("root/script.js");
+
+            if (!htmlFile) { alert("Необходим файл root/index.html для запуска!"); return; }
+
+            // Создаем сводный HTML, внедряя CSS и JS напрямую для правильной работы в Blob
+            let combinedSource = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>${cssFile ? cssFile.content : ''}</style>
+                </head>
+                <body>
+                    ${htmlFile.content.replace(/<script.*><\/script>/g, '').replace(/<link.*>/g, '')}
+                    <script>${jsFile ? jsFile.content : ''}<\/script>
+                </body>
+                </html>
+            `;
+
+            let blob = new Blob([combinedSource], { type: 'text/html' });
+            let url = URL.createObjectURL(blob);
+            
+            let iframe = document.getElementById('game-preview');
+            iframe.src = url;
+            iframe.style.display = 'block';
+
+            // Активируем полноэкранный режим браузера (Fullscreen API)
+            if (iframe.requestFullscreen) { iframe.requestFullscreen(); }
+            else if (iframe.mozRequestFullScreen) { iframe.mozRequestFullScreen(); }
+            else if (iframe.webkitRequestFullscreen) { iframe.webkitRequestFullscreen(); }
+
+            // Выход из полноэкранного режима по кнопке ESC закроет iframe
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement) { iframe.style.display = 'none'; iframe.src = ''; }
+            });
+        }
+
+        // 📦 ЭКСПОРТ В ZIP С ПОМОЩЬЮ JSZIP
+        function exportWeb() {
+            let zip = new JSZip();
+
+            // Рекурсивный перенос виртуальных файлов в архив ZIP
+            function addToZip(folderRef, zipRef) {
+                for (let key in folderRef) {
+                    let item = folderRef[key];
+                    if (item.type === 'folder') {
+                        let newZipFolder = zipRef.folder(key);
+                        addToZip(item.children, newZipFolder);
+                    } else {
+                        zipRef.file(key, item.content);
+                    }
+                }
+            }
+
+            addToZip(fileSystem.root.children, zip);
+
+            // Генерация и автоматическое скачивание файла архива
+            zip.generateAsync({ type: "blob" }).then(function (content) {
+                let a = document.createElement("a");
+                a.href = URL.createObjectURL(content);
+                a.download = "my_html5_game.zip";
+                a.click();
+            });
+        }
+
+        // Инициализация при старте
+        renderTree();
+    </script>
+</body>
+  </html>
+  
