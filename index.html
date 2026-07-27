@@ -5,35 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Game Engine</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Локальное подключение библиотек для автономной работы -->
-    <script src="dexie.min.js"></script>
-    <script src="jszip.min.js"></script>
 </head>
 <body>
-
     <div id="sidebar">
         <div class="panel-header">Проводник</div>
         <div class="toolbar">
-            <button class="btn" onclick="triggerCreateFolder()">📁 +Папка</button>
-            <button class="btn" onclick="triggerCreateFile()">📄 +Файл</button>
+            <button class="btn" onclick="createFolder()">📁 +Папка</button>
+            <button class="btn" onclick="createFile()">📄 +Файл</button>
         </div>
-        <div id="current-dir-display">Текущая папка: /</div>
         <div id="file-tree"></div>
     </div>
 
     <div id="editor-container">
-        <div id="current-file-title">Выберите или создайте файл для редактирования</div>
+        <div id="current-file-title">Выберите файл для редактирования</div>
         <textarea id="code-editor" disabled></textarea>
-        
         <div id="controls">
             <button class="btn btn-run" onclick="runGame()">▶ Запустить игру</button>
-            <button class="btn btn-export" onclick="exportWeb()">📦 Экспорт Web (.ZIP)</button>
+            <button class="btn btn-export" onclick="exportSingleWeb()">📦 Скачать HTML-Игру</button>
         </div>
     </div>
 
-    <!-- Фрейм для вывода игры на весь экран -->
     <iframe id="game-preview"></iframe>
-
     <script src="script.js"></script>
 </body>
 </html>
