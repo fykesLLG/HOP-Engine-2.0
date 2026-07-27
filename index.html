@@ -13,25 +13,19 @@
             <button class="btn" onclick="createFolder()">📁 +Папка</button>
             <button class="btn" onclick="createFile()">📄 +Файл</button>
         </div>
-        <!-- Быстрые кнопки вверху панели, если внизу перекроет клавиатура -->
-        <div class="toolbar quick-controls">
-            <button class="btn btn-run" onclick="runGame()">▶ Старт</button>
-            <button class="btn btn-export" onclick="exportSingleWeb()">📦 Экспорт</button>
+        
+        <!-- КНОПКИ ТЕПЕРЬ ТУТ: Жестко закреплены вверху проводника -->
+        <div class="toolbar main-controls">
+            <button class="btn btn-run" onclick="runGame()">▶ ЗАПУСТИТЬ</button>
+            <button class="btn btn-export" onclick="exportSingleWeb()">📦 СКАЧАТЬ</button>
         </div>
+        
         <div id="file-tree"></div>
     </div>
 
     <div id="editor-container">
         <div id="current-file-title">Выберите файл для редактирования</div>
-        <div class="textarea-wrapper">
-            <textarea id="code-editor" disabled></textarea>
-        </div>
-        
-        <!-- Фиксированная нижняя панель для кнопок -->
-        <div id="controls-fixed-bottom">
-            <button class="btn btn-run-large" onclick="runGame()">▶ ЗАПУСТИТЬ ИГРУ</button>
-            <button class="btn btn-export-large" onclick="exportSingleWeb()">📦 СКАЧАТЬ HTML-ИГРУ</button>
-        </div>
+        <textarea id="code-editor" disabled></textarea>
     </div>
 
     <iframe id="game-preview"></iframe>
