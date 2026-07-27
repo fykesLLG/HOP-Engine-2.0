@@ -10,16 +10,10 @@
     <div id="sidebar">
         <div class="panel-header">Проводник</div>
         <div class="toolbar">
-            <button class="btn" onclick="createFolder()">📁 +Папка</button>
-            <button class="btn" onclick="createFile()">📄 +Файл</button>
+            <button class="btn" onclick="triggerCreateFolder()">📁 +Папка</button>
+            <button class="btn" onclick="triggerCreateFile()">📄 +Файл</button>
         </div>
-        
-        <!-- КНОПКИ ТЕПЕРЬ ТУТ: Жестко закреплены вверху проводника -->
-        <div class="toolbar main-controls">
-            <button class="btn btn-run" onclick="runGame()">▶ ЗАПУСТИТЬ</button>
-            <button class="btn btn-export" onclick="exportSingleWeb()">📦 СКАЧАТЬ</button>
-        </div>
-        
+        <div id="current-dir-display" onclick="goBack()" style="cursor:pointer; padding:8px; background:#333; font-size:12px; color:#007acc; font-weight:bold;">📍 Назад [..]</div>
         <div id="file-tree"></div>
     </div>
 
