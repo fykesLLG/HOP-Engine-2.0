@@ -1,0 +1,161 @@
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    background: #1e1e1e;
+    color: #fff;
+    overflow: hidden;
+}
+
+/* Боковая панель */
+#sidebar {
+    width: 280px;
+    background: #252526;
+    border-right: 1px solid #3c3c3c;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    padding: 10px;
+    background: #2d2d2d;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #858585;
+    border-bottom: 1px solid #3c3c3c;
+}
+
+.toolbar {
+    padding: 8px;
+    display: flex;
+    gap: 5px;
+    background: #2d2d2d;
+}
+
+#current-dir-display {
+    padding: 5px 10px;
+    font-size: 11px;
+    background: #333333;
+    color: #007acc;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.btn {
+    background: #3c3c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: #4f4f4f;
+}
+
+#file-tree {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px 5px;
+}
+
+/* Стили элементов дерева */
+.tree-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    font-size: 14px;
+    user-select: none;
+}
+
+.tree-item:hover {
+    background: #2a2d2e;
+}
+
+.tree-item.folder-item {
+    color: #cca700;
+}
+
+.tree-item.file-item {
+    color: #e2e2e2;
+    padding-left: 20px;
+}
+
+.tree-item.selected {
+    background: #37373d;
+    border-left: 3px solid #007acc;
+}
+
+/* Главный редактор */
+#editor-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    background: #1e1e1e;
+}
+
+#current-file-title {
+    margin-bottom: 10px;
+    color: #9cdcfe;
+    font-size: 14px;
+    font-family: monospace;
+}
+
+textarea {
+    flex-grow: 1;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border: 1px solid #3c3c3c;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 16px;
+    padding: 15px;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    border-radius: 4px;
+}
+
+textarea:disabled {
+    background: #1a1a1a;
+    color: #555;
+    cursor: not-allowed;
+}
+
+#controls {
+    margin-top: 15px;
+    display: flex;
+    gap: 12px;
+}
+
+.btn-run { background: #28a745; font-weight: bold; }
+.btn-run:hover { background: #218838; }
+
+.btn-export { background: #007acc; font-weight: bold; }
+.btn-export:hover { background: #0062a3; }
+
+/* Полноэкранный Iframe */
+iframe {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    background: #fff;
+    z-index: 99999;
+}
