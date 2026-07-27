@@ -1,138 +1,19 @@
-// Работаем с чистым встроенным IndexedDB без сторонних библиотек
-let db;
-const request = indexedDB.open("PureGameEngineDB", 1);
-
-request.onupgradeneeded = (e) => {
-    db = e.target.result;
-    db.createObjectStore("files", { keyPath: "id" });
-};
-
-request.onsuccess = (e) => {
-    db = e.target.result;
-    initEngine();
-};
-
-let activeFileId = null;
-const editor = document.getElementById('code-editor');
-
-async function initEngine() {
-    // Проверяем, есть ли файлы, если нет — создаем стартовые
-    const transaction = db.transaction(["files"], "readwrite");
-    const store = transaction.objectStore("files");
-    
-    store.getAll().onsuccess = (e) => {
-        if (e.target.result.length === 0) {
-            const startFiles = [
-                { id: "index.html", name: "index.html", type: "file", content: "<h1>Моя Мобильная Игра</h1>\n<p>Нажми на экран!</p>" },
-                { id: "style.css", name: "style.css", type: "file", content: "body { background: midnightblue; color: white; text-align: center; font-family: sans-serif; padding-top: 30%; }" },
-                { id: "script.js", name: "script.js", type: "file", content: "document.body.onclick = () => { alert('Работает без библиотек!'); };" }
-            ];
-            startFiles.forEach(f => store.add(f));
-        }
-        renderExplorer();
-    };
-
-    editor.addEventListener('input', (e) => {
-        if (activeFileId) {
-            const tx = db.transaction(["files"], "readwrite");
-            tx.objectStore("files").get(activeFileId).onsuccess = (ev) => {
-                let file = ev.target.result;
-                file.content = e.target.value;
-                db.transaction(["files"], "readwrite").objectStore("files").put(file);
-            };
-        }
-    });
-}
-
-function renderExplorer() {
-    const treeContainer = document.getElementById('file-tree');
-    treeContainer.innerHTML = '';
-    
-    db.transaction(["files"], "readonly").objectStore("files").getAll().onsuccess = (e) => {
-        e.target.result.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'tree-item' + (activeFileId === item.id ? ' selected' : '');
-            div.textContent = (item.type === 'folder' ? '📁 ' : '📄 ') + item.name;
-            div.onclick = () => {
-                if (item.type === 'file') openFile(item.id, item.content);
-            };
-            treeContainer.appendChild(div);
-        });
-    };
-}
-
-function openFile(id, content) {
-    activeFileId = id;
-    document.getElementById('current-file-title').textContent = `Редактируется: ${id}`;
-    editor.disabled = false;
-    editor.value = content;
-    renderExplorer();
-}
-
-function createFile() {
-    let name = prompt("Имя файла (например, test.js):");
-    if (!name) return;
-    const tx = db.transaction(["files"], "readwrite");
-    tx.objectStore("files").add({ id: name, name: name, type: "file", content: "" });
-    renderExplorer();
-}
-
-function createFolder() {
-    let name = prompt("Имя папки:");
-    if (!name) return;
-    const tx = db.transaction(["files"], "readwrite");
-    tx.objectStore("files").add({ id: name, name: name, type: "folder", content: "" });
-    renderExplorer();
-}
-
-// Собираем код всех созданных файлов проекта в одну кучу
-function buildGameCode(callback) {
-    db.transaction(["files"], "readonly").objectStore("files").getAll().onsuccess = (e) => {
-        const files = e.target.result;
-        const html = files.find(f => f.id === "index.html")?.content || "<h1>Нет index.html</h1>";
-        let css = "";
-        let js = "";
-
-        files.forEach(f => {
-            if (f.id.endsWith('.css')) css += f.content + "\n";
-            if (f.id.endsWith('.js')) js += f.content + "\n";
-        });
-
-        const finalHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${html}<script>${js}<\/script></body></html>`;
-        callback(finalHTML);
-    };
-}
-
-// Запуск на весь экран
-function runGame() {
-    buildGameCode((code) => {
-        const blob = new Blob([code], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const iframe = document.getElementById('game-preview');
-        iframe.src = url;
-        iframe.style.display = 'block';
-
-        if (iframe.requestFullscreen) iframe.requestFullscreen();
-        else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
-
-        const exit = () => {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                iframe.style.display = 'none'; iframe.src = '';
-            }
-        };
-        document.addEventListener('fullscreenchange', exit);
-        document.addEventListener('webkitfullscreenchange', exit);
-    });
-}
-
-// Скачивание игры в ОДИН файл (замена ZIP)
-function exportSingleWeb() {
-    buildGameCode((code) => {
-        const blob = new Blob([code], { type: 'text/html' });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "my_game.html";
-        a.click();
-    });
-            }
-                
+* { box-sizing: border-box; font-family: sans-serif; }
+body { margin: 0; display: flex; height: 100vh; background: #1e1e1e; color: #fff; overflow: hidden; }
+#sidebar { width: 260px; background: #252526; border-right: 1px solid #3c3c3c; display: flex; flex-direction: column; }
+.panel-header { padding: 10px; background: #2d2d2d; font-size: 12px; color: #858585; text-transform: uppercase; }
+.toolbar { padding: 8px; display: flex; gap: 5px; background: #2d2d2d; }
+.btn { background: #3c3c3c; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 3px; font-size: 12px; }
+.btn:hover { background: #4f4f4f; }
+#file-tree { flex-grow: 1; overflow-y: auto; padding: 10px; }
+.tree-item { padding: 6px; cursor: pointer; border-radius: 3px; font-size: 14px; margin-bottom: 2px; }
+.tree-item:hover { background: #2a2d2e; }
+.tree-item.selected { background: #37373d; border-left: 3px solid #007acc; }
+#editor-container { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; }
+#current-file-title { margin-bottom: 10px; color: #9cdcfe; font-size: 14px; font-family: monospace; }
+textarea { flex-grow: 1; background: #1e1e1e; color: #d4d4d4; border: 1px solid #3c3c3c; font-family: monospace; font-size: 16px; padding: 15px; resize: none; outline: none; }
+textarea:disabled { background: #1a1a1a; }
+#controls { margin-top: 15px; display: flex; gap: 12px; }
+.btn-run { background: #28a745; font-weight: bold; }
+.btn-export { background: #007acc; font-weight: bold; }
+iframe { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; background: #fff; z-index: 99999; }
